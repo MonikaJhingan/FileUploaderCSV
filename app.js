@@ -36,6 +36,22 @@ app.use(express.static(path.resolve(__dirname,'public')));
 
 //default pageload
 app.get('/',(req,res)=>{
+    let searchcode = req.query.search;
+    var query ='';
+    if(searchcode && !isNaN(searchcode)){
+    query =  {$or:[{"sku_code":searchcode},{"product_name": searchcode},{"product_description":searchcode}]};
+} else { 
+    query =  {$or:[{"product_name":  searchcode},{"product_description":searchcode}]};
+}
+if(searchcode) {
+    csvModel.find(query, function(err, result) {
+        if (err) throw err;
+        
+        res.render('demo',{data:result});
+        
+      });
+} else {
+   
     csvModel.find((err,data)=>{
          if(err){
              console.log(err);
@@ -47,11 +63,19 @@ app.get('/',(req,res)=>{
               }
          }
     });
+}
 });
 
 var temp ;
 
 app.post('/',uploads.single('csv'),(req,res)=>{
+
+    //Validate file is csv
+    let file = req.file;
+    if (!file.mimetype == "text/csv") {
+         res.send('Only .csv format allowed!');
+      }
+
  //convert csvfile to jsonArray   
 csv()
 .fromFile(req.file.path)
